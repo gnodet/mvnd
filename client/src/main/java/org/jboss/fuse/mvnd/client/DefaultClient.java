@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.fusesource.jansi.Ansi;
 import org.jboss.fuse.mvnd.common.BuildProperties;
+import org.jboss.fuse.mvnd.common.DaemonException;
 import org.jboss.fuse.mvnd.common.DaemonInfo;
 import org.jboss.fuse.mvnd.common.DaemonRegistry;
 import org.jboss.fuse.mvnd.common.Environment;
@@ -36,8 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class DefaultClient implements Client {
-
-    public static final int CANCEL_TIMEOUT = 10 * 1000;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultClient.class);
 
@@ -62,7 +61,11 @@ public class DefaultClient implements Client {
         }
 
         try (TerminalOutput output = new TerminalOutput(logFile)) {
-            new DefaultClient(new DaemonParameters()).execute(output, args);
+            try {
+                new DefaultClient(new DaemonParameters()).execute(output, args);
+            } catch (DaemonException.InterruptedException e) {
+                output.accept(Message.log(System.lineSeparator() + "The build was canceled"));
+            }
         }
     }
 

@@ -60,6 +60,7 @@ public class TerminalOutput implements ClientOutput {
     public static final int CTRL_M = 'M' & 0x1f;
 
     private final Terminal terminal;
+    private final Terminal.SignalHandler previousIntHandler;
     private final Display display;
     private final LinkedHashMap<String, Project> projects = new LinkedHashMap<>();
     private final ClientLog log;
@@ -69,6 +70,7 @@ public class TerminalOutput implements ClientOutput {
     private final CountDownLatch closed = new CountDownLatch(1);
     private final long start;
     private final ReadWriteLock readInput = new ReentrantReadWriteLock();
+    private final DaemonDispatch dispatch = new DaemonDispatch();
 
     private volatile String name;
     private volatile int totalProjects;
@@ -97,6 +99,11 @@ public class TerminalOutput implements ClientOutput {
         this.start = System.currentTimeMillis();
         this.terminal = TerminalBuilder.terminal();
         terminal.enterRawMode();
+        this.previousIntHandler = terminal.handle(Terminal.Signal.INT,
+                sig -> {
+                    accept(Message.buildStatus("Cancelling..."));
+                    dispatch.dispatch(Message.CANCEL_BUILD_SINGLETON);
+                });
         this.display = new Display(terminal, false);
         this.log = logFile == null ? new MessageCollector() : new FileLog(logFile);
         final Thread r = new Thread(this::readInputLoop);
@@ -131,6 +138,7 @@ public class TerminalOutput implements ClientOutput {
             this.name = bs.getProjectId();
             this.totalProjects = bs.getProjectCount();
             this.maxThreads = bs.getMaxThreads();
+            this.dispatch.setSink(bs.getDaemonDispatch());
             break;
         }
         case Message.BUILD_EXCEPTION: {
@@ -208,8 +216,8 @@ public class TerminalOutput implements ClientOutput {
                     if (c < 0) {
                         break;
                     } else if (c == '\n' || c == '\r') {
-                        prompt.getCallback().accept(sb.toString());
                         terminal.writer().println();
+                        dispatch.dispatch(prompt.response(sb.toString()));
                         break;
                     } else if (c == 127) {
                         if (sb.length() > 0) {
@@ -249,7 +257,7 @@ public class TerminalOutput implements ClientOutput {
             }
             break;
         }
-        case Message.KEYBOARD_INPUT:
+        case Message.KEYBOARD_INPUT: {
             char keyStroke = ((StringMessage) entry).getPayload().charAt(0);
             switch (keyStroke) {
             case '+':
@@ -268,6 +276,10 @@ public class TerminalOutput implements ClientOutput {
             }
             break;
         }
+        default:
+            throw new IllegalStateException("Unexpected message " + entry);
+        }
+
         return true;
     }
 
@@ -324,6 +336,7 @@ public class TerminalOutput implements ClientOutput {
         reader.interrupt();
         accept(SimpleMessage.BUILD_STOPPED_SINGLETON);
         reader.join();
+        terminal.handle(Terminal.Signal.INT, previousIntHandler);
         terminal.close();
         closed.countDown();
         if (exception != null) {
@@ -507,6 +520,42 @@ public class TerminalOutput implements ClientOutput {
             out.close();
         }
 
+    }
+
+    public static class DaemonDispatch {
+        private final Object lock = new Object();
+        private List<Message> queue;
+        private Consumer<Message> sink;
+
+        public void dispatch(Message m) {
+            synchronized (lock) {
+                if (sink != null) {
+                    if (queue != null) {
+                        for (Message msg : queue) {
+                            sink.accept(msg);
+                        }
+                    }
+                    sink.accept(m);
+                } else {
+                    if (queue == null) {
+                        queue = new ArrayList<Message>();
+                    }
+                    queue.add(m);
+                }
+            }
+        }
+
+        public void setSink(Consumer<Message> sink) {
+            synchronized (lock) {
+                this.sink = sink;
+                if (queue != null) {
+                    for (Message msg : queue) {
+                        sink.accept(msg);
+                    }
+                    queue = null;
+                }
+            }
+        }
     }
 
     /**

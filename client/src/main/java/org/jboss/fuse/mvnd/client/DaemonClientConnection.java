@@ -32,7 +32,7 @@ import org.jboss.fuse.mvnd.common.DaemonException.ConnectException;
 import org.jboss.fuse.mvnd.common.DaemonException.StaleAddressException;
 import org.jboss.fuse.mvnd.common.DaemonInfo;
 import org.jboss.fuse.mvnd.common.Message;
-import org.jboss.fuse.mvnd.common.Message.Prompt;
+import org.jboss.fuse.mvnd.common.Message.BuildStarted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -130,9 +130,9 @@ public class DaemonClientConnection implements Closeable {
                 if (m == null) {
                     break;
                 }
-                if (m.getType() == Message.PROMPT) {
-                    final Prompt prompt = (Prompt) m;
-                    m = prompt.withCallback(response -> dispatch(prompt.response(response)));
+                if (m.getType() == Message.BUILD_STARTED) {
+                    final BuildStarted bs = (BuildStarted) m;
+                    m = bs.withDaemonDispatch(this::dispatch);
                 }
                 queue.put(m);
             }

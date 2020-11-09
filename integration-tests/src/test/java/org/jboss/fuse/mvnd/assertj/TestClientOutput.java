@@ -20,10 +20,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.assertj.core.api.Assertions;
 import org.jboss.fuse.mvnd.common.Message;
+import org.jboss.fuse.mvnd.common.Message.BuildStarted;
 import org.jboss.fuse.mvnd.common.logging.ClientOutput;
+import org.jboss.fuse.mvnd.common.logging.TerminalOutput.DaemonDispatch;
 
 public class TestClientOutput implements ClientOutput {
     private final List<Message> messages = new ArrayList<>();
+    protected final DaemonDispatch dispatch = new DaemonDispatch();
 
     @Override
     public void close() throws Exception {
@@ -31,6 +34,10 @@ public class TestClientOutput implements ClientOutput {
 
     @Override
     public void accept(Message message) {
+        if (message.getType() == Message.BUILD_STARTED) {
+            BuildStarted bs = (BuildStarted) message;
+            this.dispatch.setSink(bs.getDaemonDispatch());
+        }
         messages.add(message);
     }
 
