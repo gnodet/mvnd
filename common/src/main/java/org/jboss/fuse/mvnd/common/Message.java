@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public abstract class Message {
     public static final int BUILD_REQUEST = 0;
@@ -417,7 +416,6 @@ public abstract class Message {
         final String projectId;
         final int projectCount;
         final int maxThreads;
-        final Consumer<Message> daemonDispatch;
 
         public static BuildStarted read(DataInputStream input) throws IOException {
             final String projectId = readUTF(input);
@@ -427,15 +425,10 @@ public abstract class Message {
         }
 
         public BuildStarted(String projectId, int projectCount, int maxThreads) {
-            this(projectId, projectCount, maxThreads, null);
-        }
-
-        public BuildStarted(String projectId, int projectCount, int maxThreads, Consumer<Message> daemonDispatch) {
             super(BUILD_STARTED);
             this.projectId = projectId;
             this.projectCount = projectCount;
             this.maxThreads = maxThreads;
-            this.daemonDispatch = daemonDispatch;
         }
 
         public String getProjectId() {
@@ -465,13 +458,6 @@ public abstract class Message {
             output.writeInt(maxThreads);
         }
 
-        public BuildStarted withDaemonDispatch(Consumer<Message> daemonDispatch) {
-            return new BuildStarted(projectId, projectCount, maxThreads, daemonDispatch);
-        }
-
-        public Consumer<Message> getDaemonDispatch() {
-            return daemonDispatch;
-        }
     }
 
     public static class BuildMessage extends Message {
@@ -529,6 +515,8 @@ public abstract class Message {
                 return "BuildStopped";
             case STOP:
                 return "Stop";
+            case CANCEL_BUILD:
+                return "BuildCanceled";
             default:
                 throw new IllegalStateException("Unexpected type " + type);
             }
@@ -741,12 +729,12 @@ public abstract class Message {
         return new StringMessage(BUILD_STATUS, payload);
     }
 
-    public static BuildMessage log(String message) {
-        return new BuildMessage(null, message);
+    public static Display display(String message) {
+        return new Display(null, message);
     }
 
-    public static BuildMessage log(String projectId, String message) {
-        return new BuildMessage(projectId, message);
+    public static BuildMessage log(String message) {
+        return new BuildMessage(null, message);
     }
 
     public static StringMessage keyboardInput(char keyStroke) {

@@ -83,7 +83,7 @@ public class NativeTestClient implements Client {
             env.put("JAVA_HOME", System.getProperty("java.home"));
         }
         final String cmdString = String.join(" ", cmd);
-        output.accept(Message.log("Executing " + cmdString));
+        output.accept(Message.display("Executing " + cmdString));
 
         final List<String> log = new ArrayList<>();
         final Consumer<String> loggingConsumer = s -> {
@@ -92,7 +92,7 @@ public class NativeTestClient implements Client {
             }
         };
         try (CommandProcess process = new CommandProcess(builder.start(),
-                loggingConsumer.andThen(s -> output.accept(Message.log(s))))) {
+                loggingConsumer.andThen(s -> output.accept(Message.display(s))))) {
             final int exitCode = process.waitFor(timeoutMs);
             return new Result(args, exitCode, log);
         } catch (IOException e) {

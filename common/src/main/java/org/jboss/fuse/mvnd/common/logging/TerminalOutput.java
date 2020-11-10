@@ -39,7 +39,6 @@ import org.jboss.fuse.mvnd.common.Message.BuildEvent;
 import org.jboss.fuse.mvnd.common.Message.BuildException;
 import org.jboss.fuse.mvnd.common.Message.BuildMessage;
 import org.jboss.fuse.mvnd.common.Message.BuildStarted;
-import org.jboss.fuse.mvnd.common.Message.SimpleMessage;
 import org.jboss.fuse.mvnd.common.Message.StringMessage;
 import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
@@ -70,8 +69,8 @@ public class TerminalOutput implements ClientOutput {
     private final CountDownLatch closed = new CountDownLatch(1);
     private final long start;
     private final ReadWriteLock readInput = new ReentrantReadWriteLock();
-    private final DaemonDispatch dispatch = new DaemonDispatch();
 
+    private volatile Consumer<Message> sink;
     private volatile String name;
     private volatile int totalProjects;
     private volatile int maxThreads;
@@ -99,16 +98,24 @@ public class TerminalOutput implements ClientOutput {
         this.start = System.currentTimeMillis();
         this.terminal = TerminalBuilder.terminal();
         terminal.enterRawMode();
+        Thread mainThread = Thread.currentThread();
+        sink = m -> {
+            if (m == Message.CANCEL_BUILD_SINGLETON) {
+                mainThread.interrupt();
+            }
+        };
         this.previousIntHandler = terminal.handle(Terminal.Signal.INT,
-                sig -> {
-                    accept(Message.buildStatus("Cancelling..."));
-                    dispatch.dispatch(Message.CANCEL_BUILD_SINGLETON);
-                });
+                sig -> sink.accept(Message.CANCEL_BUILD_SINGLETON));
         this.display = new Display(terminal, false);
         this.log = logFile == null ? new MessageCollector() : new FileLog(logFile);
         final Thread r = new Thread(this::readInputLoop);
         r.start();
         this.reader = r;
+    }
+
+    @Override
+    public void setSink(Consumer<Message> sink) {
+        this.sink = sink;
     }
 
     @Override
@@ -122,13 +129,12 @@ public class TerminalOutput implements ClientOutput {
     @Override
     public void accept(List<Message> entries) {
         assert "main".equals(Thread.currentThread().getName());
-        boolean update = true;
         for (Message entry : entries) {
-            update &= doAccept(entry);
+            if (!doAccept(entry)) {
+                return;
+            }
         }
-        if (update) {
-            update();
-        }
+        update();
     }
 
     private boolean doAccept(Message entry) {
@@ -138,8 +144,20 @@ public class TerminalOutput implements ClientOutput {
             this.name = bs.getProjectId();
             this.totalProjects = bs.getProjectCount();
             this.maxThreads = bs.getMaxThreads();
-            this.dispatch.setSink(bs.getDaemonDispatch());
             break;
+        }
+        case Message.CANCEL_BUILD: {
+            projects.values().stream().flatMap(p -> p.log.stream()).forEach(log);
+            clearDisplay();
+            try {
+                log.close();
+            } catch (IOException e1) {
+                throw new RuntimeException(e1);
+            }
+            final AttributedStyle s = new AttributedStyle().bold().foreground(AttributedStyle.RED);
+            new AttributedString("The build was canceled", s).println(terminal);
+            terminal.flush();
+            return false;
         }
         case Message.BUILD_EXCEPTION: {
             final BuildException e = (BuildException) entry;
@@ -200,7 +218,11 @@ public class TerminalOutput implements ClientOutput {
         case Message.DISPLAY: {
             Message.Display d = (Message.Display) entry;
             display.update(Collections.emptyList(), 0);
-            terminal.writer().printf("[%s] %s%n", d.getProjectId(), d.getMessage());
+            if (d.getProjectId() != null) {
+                terminal.writer().printf("[%s] %s%n", d.getProjectId(), d.getMessage());
+            } else {
+                terminal.writer().printf("%s%n", d.getMessage());
+            }
             break;
         }
         case Message.PROMPT: {
@@ -217,7 +239,7 @@ public class TerminalOutput implements ClientOutput {
                         break;
                     } else if (c == '\n' || c == '\r') {
                         terminal.writer().println();
-                        dispatch.dispatch(prompt.response(sb.toString()));
+                        sink.accept(prompt.response(sb.toString()));
                         break;
                     } else if (c == 127) {
                         if (sb.length() > 0) {
@@ -240,20 +262,11 @@ public class TerminalOutput implements ClientOutput {
         }
         case Message.BUILD_MESSAGE: {
             BuildMessage bm = (BuildMessage) entry;
-            if (closing) {
-                try {
-                    closed.await();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                System.err.println(bm.getMessage());
+            if (bm.getProjectId() != null) {
+                Project prj = projects.computeIfAbsent(bm.getProjectId(), Project::new);
+                prj.log.add(bm.getMessage());
             } else {
-                if (bm.getProjectId() != null) {
-                    Project prj = projects.computeIfAbsent(bm.getProjectId(), Project::new);
-                    prj.log.add(bm.getMessage());
-                } else {
-                    log.accept(bm.getMessage());
-                }
+                log.accept(bm.getMessage());
             }
             break;
         }
@@ -334,7 +347,7 @@ public class TerminalOutput implements ClientOutput {
     public void close() throws Exception {
         closing = true;
         reader.interrupt();
-        accept(SimpleMessage.BUILD_STOPPED_SINGLETON);
+        log.close();
         reader.join();
         terminal.handle(Terminal.Signal.INT, previousIntHandler);
         terminal.close();
@@ -520,42 +533,6 @@ public class TerminalOutput implements ClientOutput {
             out.close();
         }
 
-    }
-
-    public static class DaemonDispatch {
-        private final Object lock = new Object();
-        private List<Message> queue;
-        private Consumer<Message> sink;
-
-        public void dispatch(Message m) {
-            synchronized (lock) {
-                if (sink != null) {
-                    if (queue != null) {
-                        for (Message msg : queue) {
-                            sink.accept(msg);
-                        }
-                    }
-                    sink.accept(m);
-                } else {
-                    if (queue == null) {
-                        queue = new ArrayList<Message>();
-                    }
-                    queue.add(m);
-                }
-            }
-        }
-
-        public void setSink(Consumer<Message> sink) {
-            synchronized (lock) {
-                this.sink = sink;
-                if (queue != null) {
-                    for (Message msg : queue) {
-                        sink.accept(msg);
-                    }
-                    queue = null;
-                }
-            }
-        }
     }
 
     /**

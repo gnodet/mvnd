@@ -19,6 +19,8 @@ import java.io.IOError;
 import org.apache.maven.execution.MavenSession;
 import org.jboss.fuse.mvnd.common.Message;
 import org.jboss.fuse.mvnd.common.Message.BuildEvent;
+import org.jboss.fuse.mvnd.common.Message.BuildMessage;
+import org.jboss.fuse.mvnd.common.Message.BuildStarted;
 import org.jboss.fuse.mvnd.common.logging.TerminalOutput;
 
 public class MavenLoggingSpy extends AbstractLoggingSpy {
@@ -32,7 +34,7 @@ public class MavenLoggingSpy extends AbstractLoggingSpy {
     protected void onStartSession(MavenSession session) {
         try {
             output = new TerminalOutput(null);
-            output.accept(new Message.BuildStarted(
+            output.accept(new BuildStarted(
                     session.getTopLevelProject().getName(),
                     session.getAllProjects().size(),
                     session.getRequest().getDegreeOfConcurrency()));
@@ -70,7 +72,7 @@ public class MavenLoggingSpy extends AbstractLoggingSpy {
     @Override
     protected void onProjectLog(String projectId, String message) {
         super.onProjectLog(projectId, message);
-        output.accept(Message.log(projectId, message));
+        output.accept(new BuildMessage(projectId, message));
     }
 
 }
