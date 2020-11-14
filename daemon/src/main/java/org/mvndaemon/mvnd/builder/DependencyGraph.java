@@ -15,10 +15,15 @@
  */
 package org.mvndaemon.mvnd.builder;
 
+import java.io.IOException;
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,35 +85,50 @@ interface DependencyGraph<K> {
                 deps.get(0).forEach(p -> downstreams.get(p).addAll(deps.get(1)));
             }
         }
-        return new DependencyGraph<MavenProject>() {
-            @Override
-            public Stream<MavenProject> getDownstreamProjects(MavenProject project) {
-                return downstreams.get(project).stream();
-            }
-
-            @Override
-            public Stream<MavenProject> getProjects() {
-                return projects.stream();
-            }
-
-            @Override
-            public Stream<MavenProject> getUpstreamProjects(MavenProject project) {
-                return upstreams.get(project).stream();
-            }
-
-            @Override
-            public boolean isRoot(MavenProject project) {
-                return upstreams.get(project).isEmpty();
-            }
-        };
+        return new SimpleDependencyGraph<>(projects, upstreams, downstreams);
     }
 
-    Stream<K> getProjects();
+    default Stream<K> getProjects() {
+        return getProjectList().stream();
+    }
 
-    boolean isRoot(K project);
+    default boolean isRoot(K project) {
+        return getUpstreamProjectList(project).isEmpty();
+    }
 
-    Stream<K> getDownstreamProjects(K project);
+    default Stream<K> getDownstreamProjects(K project) {
+        return getDownstreamProjectList(project).stream();
+    }
 
-    Stream<K> getUpstreamProjects(K project);
+    default Stream<K> getUpstreamProjects(K project) {
+        return getUpstreamProjectList(project).stream();
+    }
+
+    default int computeMaxWidth(int max, long maxTimeMillis) {
+        return new DagWidth<>(this).getMaxWidth(max, maxTimeMillis);
+    }
+
+    default void store(Function<K, String> toString, Path path) {
+        try (Writer w = Files.newBufferedWriter(path)) {
+            getProjects().forEach(k -> {
+                try {
+                    w.write(toString.apply(k));
+                    w.write(" = ");
+                    w.write(getUpstreamProjects(k).map(toString).collect(Collectors.joining(",")));
+                    w.write(System.lineSeparator());
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    List<K> getProjectList();
+
+    List<K> getDownstreamProjectList(K project);
+
+    List<K> getUpstreamProjectList(K project);
 
 }

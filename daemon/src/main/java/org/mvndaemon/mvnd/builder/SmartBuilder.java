@@ -196,6 +196,12 @@ public class SmartBuilder implements Builder {
         logger.info("Build maximum degree of concurrency is " + degreeOfConcurrency);
         logger.info("Total number of projects is " + graph.getProjects().count());
 
+        // find out the max concurrency
+        long t0 = System.currentTimeMillis();
+        int maxWidth = graph.computeMaxWidth(degreeOfConcurrency, 1000);
+        long t1 = System.currentTimeMillis();
+        logger.warn("Project graph width: {} (computed in {} ms)", maxWidth, t1 - t0);
+
         // the actual build execution
         List<Map.Entry<TaskSegment, ReactorBuildStats>> allstats = new ArrayList<>();
         for (TaskSegment taskSegment : taskSegments) {
