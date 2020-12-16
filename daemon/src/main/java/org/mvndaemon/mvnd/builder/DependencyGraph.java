@@ -293,7 +293,7 @@ public class DependencyGraph<K> {
                 List<K> l = iterator.next();
                 max = Math.max(max, l.size());
             }
-            return max;
+            return Math.min(max, maxmax);
         }
 
         private class SubsetIterator implements Iterator<List<K>> {
