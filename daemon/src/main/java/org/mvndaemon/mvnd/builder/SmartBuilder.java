@@ -198,7 +198,7 @@ public class SmartBuilder implements Builder {
 
         // find out the max concurrency
         long t0 = System.currentTimeMillis();
-        int maxWidth = graph.computeMaxWidth(degreeOfConcurrency, 1000);
+        int maxWidth = graph.computeMaxWidth(degreeOfConcurrency, 10);
         long t1 = System.currentTimeMillis();
         logger.warn("Project graph width: {} (computed in {} ms)", maxWidth, t1 - t0);
 
