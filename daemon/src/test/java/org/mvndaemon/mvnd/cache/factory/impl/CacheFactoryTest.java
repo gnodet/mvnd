@@ -29,11 +29,21 @@ import org.mvndaemon.mvnd.cache.Cache;
 import org.mvndaemon.mvnd.cache.CacheRecord;
 import org.mvndaemon.mvnd.common.Os;
 
-public class TimestampCacheFactoryTest {
+public class CacheFactoryTest {
 
     @Test
-    void putGet(@TempDir Path tempDir) throws IOException, InterruptedException {
+    void timestampCache(@TempDir Path tempDir) throws IOException, InterruptedException {
+        assertPutGet(tempDir, new TimestampCacheFactory().newCache(), 100);
+    }
 
+    @Test
+    void watchServiceCache(@TempDir Path tempDir) throws IOException, InterruptedException {
+        int asyncOpDelayMs = Os.current() == Os.MAC ? 2500 : 100;
+        assertPutGet(tempDir, new WatchServiceCacheFactory().newCache(), asyncOpDelayMs);
+    }
+
+    public void assertPutGet(Path tempDir, final Cache<String, CacheRecord> cache, int asyncOpDelayMs)
+            throws IOException, InterruptedException {
         final Path file1 = tempDir.resolve("file1");
         Files.write(file1, "content1".getBytes(StandardCharsets.UTF_8));
         final SimpleCacheRecord record1 = new SimpleCacheRecord(file1);
@@ -41,8 +51,6 @@ public class TimestampCacheFactoryTest {
         final Path file2 = tempDir.resolve("file2");
         Files.write(file2, "content2".getBytes(StandardCharsets.UTF_8));
         final SimpleCacheRecord record2 = new SimpleCacheRecord(file2);
-
-        final Cache<String, CacheRecord> cache = new DefaultCacheFactory().newCache();
 
         final String k1 = "k1";
         cache.put(k1, record1);
@@ -57,9 +65,8 @@ public class TimestampCacheFactoryTest {
         Assertions.assertFalse(record2.invalidated);
 
         Files.write(file1, "content1.1".getBytes(StandardCharsets.UTF_8));
-
-        if (Os.current() == Os.WINDOWS) {
-            Thread.sleep(3000);
+        if (asyncOpDelayMs > 0) {
+            Thread.sleep(asyncOpDelayMs);
         }
 
         Assertions.assertFalse(cache.contains(k1));
@@ -70,8 +77,8 @@ public class TimestampCacheFactoryTest {
         Assertions.assertFalse(record2.invalidated);
 
         Files.delete(file2);
-        if (Os.current() == Os.WINDOWS) {
-            Thread.sleep(3000);
+        if (asyncOpDelayMs > 0) {
+            Thread.sleep(asyncOpDelayMs);
         }
         Assertions.assertFalse(cache.contains(k2));
         Assertions.assertNull(cache.get(k2));
@@ -95,6 +102,11 @@ public class TimestampCacheFactoryTest {
         @Override
         public void invalidate() {
             this.invalidated = true;
+        }
+
+        @Override
+        public String toString() {
+            return "SimpleCacheRecord [paths=" + paths + ", invalidated=" + invalidated + "]";
         }
 
     }
