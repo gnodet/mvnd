@@ -39,7 +39,7 @@ import org.mvndaemon.mvnd.cache.CacheRecord;
 
 @Singleton
 @Named
-public class CliPluginDescriptorCache extends DefaultPluginDescriptorCache {
+public class InvalidatingPluginDescriptorCache extends DefaultPluginDescriptorCache {
 
     @FunctionalInterface
     public interface PluginDescriptorSupplier {
@@ -75,7 +75,7 @@ public class CliPluginDescriptorCache extends DefaultPluginDescriptorCache {
     final Cache<Key, Record> cache;
 
     @Inject
-    public CliPluginDescriptorCache(CacheFactory cacheFactory) {
+    public InvalidatingPluginDescriptorCache(CacheFactory cacheFactory) {
         this.cache = cacheFactory.newCache();
     }
 
