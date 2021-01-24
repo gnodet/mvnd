@@ -31,8 +31,8 @@ import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
 import org.eclipse.sisu.Priority;
 import org.eclipse.sisu.Typed;
-import org.mvndaemon.mvnd.cache.factory.Cache;
-import org.mvndaemon.mvnd.cache.factory.CacheFactory;
+import org.mvndaemon.mvnd.cache.Cache;
+import org.mvndaemon.mvnd.cache.CacheFactory;
 
 @Singleton
 @Named
@@ -45,7 +45,7 @@ public class CliPluginRealmCache extends DefaultPluginRealmCache {
         CacheRecord load() throws PluginResolutionException, PluginContainerException;
     }
 
-    protected static class Record implements org.mvndaemon.mvnd.cache.factory.CacheRecord {
+    protected static class Record implements org.mvndaemon.mvnd.cache.CacheRecord {
 
         final CacheRecord record;
 

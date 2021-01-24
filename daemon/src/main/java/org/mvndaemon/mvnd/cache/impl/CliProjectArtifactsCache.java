@@ -27,14 +27,14 @@ import org.apache.maven.artifact.Artifact;
 import org.apache.maven.lifecycle.LifecycleExecutionException;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.artifact.DefaultProjectArtifactsCache;
-import org.mvndaemon.mvnd.cache.factory.Cache;
-import org.mvndaemon.mvnd.cache.factory.CacheFactory;
+import org.mvndaemon.mvnd.cache.Cache;
+import org.mvndaemon.mvnd.cache.CacheFactory;
 
 @Singleton
 @Named
 public class CliProjectArtifactsCache extends DefaultProjectArtifactsCache {
 
-    static class Record implements org.mvndaemon.mvnd.cache.factory.CacheRecord {
+    static class Record implements org.mvndaemon.mvnd.cache.CacheRecord {
         private final CacheRecord record;
 
         public Record(CacheRecord record) {

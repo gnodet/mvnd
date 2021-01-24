@@ -27,14 +27,14 @@ import org.apache.maven.project.ExtensionDescriptor;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.classworlds.realm.ClassRealm;
 import org.codehaus.plexus.classworlds.realm.NoSuchRealmException;
-import org.mvndaemon.mvnd.cache.factory.Cache;
-import org.mvndaemon.mvnd.cache.factory.CacheFactory;
+import org.mvndaemon.mvnd.cache.Cache;
+import org.mvndaemon.mvnd.cache.CacheFactory;
 
 @Singleton
 @Named
 public class CliExtensionRealmCache extends DefaultExtensionRealmCache {
 
-    protected static class Record implements org.mvndaemon.mvnd.cache.factory.CacheRecord {
+    protected static class Record implements org.mvndaemon.mvnd.cache.CacheRecord {
 
         private final CacheRecord record;
 

@@ -23,14 +23,14 @@ import javax.inject.Singleton;
 import org.apache.maven.artifact.Artifact;
 import org.apache.maven.plugin.DefaultPluginArtifactsCache;
 import org.apache.maven.plugin.PluginResolutionException;
-import org.mvndaemon.mvnd.cache.factory.Cache;
-import org.mvndaemon.mvnd.cache.factory.CacheFactory;
+import org.mvndaemon.mvnd.cache.Cache;
+import org.mvndaemon.mvnd.cache.CacheFactory;
 
 @Singleton
 @Named
 public class CliPluginArtifactsCache extends DefaultPluginArtifactsCache {
 
-    protected static class Record implements org.mvndaemon.mvnd.cache.factory.CacheRecord {
+    protected static class Record implements org.mvndaemon.mvnd.cache.CacheRecord {
 
         private final CacheRecord record;
 
