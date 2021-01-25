@@ -108,8 +108,8 @@ import org.eclipse.aether.util.filter.AndDependencyFilter;
 import org.eclipse.aether.util.graph.visitor.PreorderNodeListGenerator;
 import org.eclipse.sisu.Priority;
 import org.eclipse.sisu.Typed;
-import org.mvndaemon.mvnd.cache.impl.InvalidatingPluginDescriptorCache;
-import org.mvndaemon.mvnd.cache.impl.InvalidatingPluginRealmCache;
+import org.mvndaemon.mvnd.invalidating.InvalidatingPluginDescriptorCache;
+import org.mvndaemon.mvnd.invalidating.InvalidatingPluginRealmCache;
 
 /*
  * gnodet: This file is based on maven DefaultMavenPluginManager and changed in order

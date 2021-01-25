@@ -13,20 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.mvndaemon.mvnd.cache.impl;
+package org.mvndaemon.mvnd.invalidating;
 
-import java.io.File;
 import java.nio.file.Path;
-import java.util.Objects;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Stream;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Singleton;
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.lifecycle.LifecycleExecutionException;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.artifact.DefaultProjectArtifactsCache;
+import org.apache.maven.plugin.DefaultPluginArtifactsCache;
+import org.apache.maven.plugin.PluginResolutionException;
 import org.eclipse.sisu.Priority;
 import org.mvndaemon.mvnd.cache.Cache;
 import org.mvndaemon.mvnd.cache.CacheFactory;
@@ -34,9 +31,10 @@ import org.mvndaemon.mvnd.cache.CacheFactory;
 @Singleton
 @Named
 @Priority(10)
-public class InvalidatingProjectArtifactsCache extends DefaultProjectArtifactsCache {
+public class InvalidatingPluginArtifactsCache extends DefaultPluginArtifactsCache {
 
-    static class Record implements org.mvndaemon.mvnd.cache.CacheRecord {
+    protected static class Record implements org.mvndaemon.mvnd.cache.CacheRecord {
+
         private final CacheRecord record;
 
         public Record(CacheRecord record) {
@@ -45,10 +43,7 @@ public class InvalidatingProjectArtifactsCache extends DefaultProjectArtifactsCa
 
         @Override
         public Stream<Path> getDependencyPaths() {
-            return record.getArtifacts().stream()
-                    .map(Artifact::getFile)
-                    .filter(Objects::nonNull)
-                    .map(File::toPath);
+            return record.getArtifacts().stream().map(artifact -> artifact.getFile().toPath());
         }
 
         @Override
@@ -59,12 +54,11 @@ public class InvalidatingProjectArtifactsCache extends DefaultProjectArtifactsCa
     final Cache<Key, Record> cache;
 
     @Inject
-    public InvalidatingProjectArtifactsCache(CacheFactory cacheFactory) {
+    public InvalidatingPluginArtifactsCache(CacheFactory cacheFactory) {
         this.cache = cacheFactory.newCache();
     }
 
-    @Override
-    public CacheRecord get(Key key) throws LifecycleExecutionException {
+    public CacheRecord get(Key key) throws PluginResolutionException {
         Record r = cache.get(key);
         if (r != null) {
             if (r.record.getException() != null) {
@@ -75,28 +69,28 @@ public class InvalidatingProjectArtifactsCache extends DefaultProjectArtifactsCa
         return null;
     }
 
-    @Override
-    public CacheRecord put(Key key, Set<Artifact> pluginArtifacts) {
+    public CacheRecord put(Key key, List<Artifact> pluginArtifacts) {
         CacheRecord record = super.put(key, pluginArtifacts);
         super.cache.remove(key);
         cache.put(key, new Record(record));
         return record;
     }
 
-    @Override
-    public CacheRecord put(Key key, LifecycleExecutionException e) {
-        CacheRecord record = super.put(key, e);
+    public CacheRecord put(Key key, PluginResolutionException exception) {
+        CacheRecord record = super.put(key, exception);
         super.cache.remove(key);
         cache.put(key, new Record(record));
         return record;
     }
 
-    @Override
+    protected void assertUniqueKey(Key key) {
+        if (cache.get(key) != null) {
+            throw new IllegalStateException("Duplicate artifact resolution result for plugin " + key);
+        }
+    }
+
     public void flush() {
         cache.clear();
     }
 
-    @Override
-    public void register(MavenProject project, Key cacheKey, CacheRecord record) {
-    }
 }

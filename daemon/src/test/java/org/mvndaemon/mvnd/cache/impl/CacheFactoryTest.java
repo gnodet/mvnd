@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.mvndaemon.mvnd.cache.factory.impl;
+package org.mvndaemon.mvnd.cache.impl;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -85,7 +85,7 @@ public class CacheFactoryTest {
         Assertions.assertTrue(record2.invalidated);
     }
 
-    static class SimpleCacheRecord implements org.mvndaemon.mvnd.cache.CacheRecord {
+    static class SimpleCacheRecord implements CacheRecord {
 
         private final List<Path> paths;
         private boolean invalidated = false;

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.mvndaemon.mvnd.cache.impl;
+package org.mvndaemon.mvnd.invalidating;
 
 import java.net.URISyntaxException;
 import java.net.URL;
