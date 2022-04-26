@@ -20,7 +20,7 @@
 
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>org.mvndaemon.mvnd</groupId>
+        <groupId>org.apache.maven.daemon</groupId>
         <artifactId>mvnd</artifactId>
         <version>0.7.2-SNAPSHOT</version>
     </parent>
@@ -83,7 +83,7 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>org.mvndaemon.mvnd</groupId>
+                <groupId>org.apache.maven.daemon</groupId>
                 <artifactId>mvnd-build-maven-plugin</artifactId>
                 <version>${project.version}</version>
                 <executions>
