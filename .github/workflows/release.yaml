@@ -67,6 +67,40 @@ jobs:
           name: artifacts
           path: dist/target/mvnd-*.zip
 
+  source:
+    name: 'Build source distributions'
+    runs-on: ubuntu-18.04
+    steps:
+      - name: 'Check out repository'
+        uses: actions/checkout@v2
+
+      - name: 'Set vars'
+        shell: bash
+        run: |
+          OS=$(echo '${{ runner.os }}' | awk '{print tolower($0)}')
+          [[ $OS == 'ubuntu' ]] && echo "OS=linux" >> $GITHUB_ENV || echo "OS=$OS" >> $GITHUB_ENV
+          [[ $OS == 'macos' ]] && echo "OS=darwin" >> $GITHUB_ENV || echo "OS=$OS" >> $GITHUB_ENV
+          echo "VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
+
+      - name: 'Set up Graal'
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: ${{ env.GRAALVM_VERSION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          components: 'native-image'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Build native distribution'
+        run: ./mvnw clean verify -Psource-distribution -pl :mvnd -Dmrm=false -B -ntp -e
+
+      - name: 'Upload artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: artifacts
+          path: target/mvnd-*-src.zip
+          path: target/mvnd-*-src.tar.gz
+
+
   release:
     runs-on: ubuntu-18.04
     needs: [build]
@@ -98,20 +132,15 @@ jobs:
 
       - name: Set environment
         run: |
-          VERSION=${GITHUB_REF##*/}
-          echo "Using VERSION=$VERSION"
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Build source distributions
-        run: ./mvnw clean verify -Psource-distribution -pl :mvnd -Dmrm=false -B -ntp -e
+          echo "VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
 
       - name: Compute sha256 checksums
         run: |
           sha256sum artifacts/mvnd-${{ env.VERSION }}-linux-amd64.zip | cut -d ' ' -f 1 > artifacts/mvnd-${{ env.VERSION }}-linux-amd64.zip.sha256
           sha256sum artifacts/mvnd-${{ env.VERSION }}-darwin-amd64.zip | cut -d ' ' -f 1 > artifacts/mvnd-${{ env.VERSION }}-darwin-amd64.zip.sha256
           sha256sum artifacts/mvnd-${{ env.VERSION }}-windows-amd64.zip | cut -d ' ' -f 1 > artifacts/mvnd-${{ env.VERSION }}-windows-amd64.zip.sha256
-          sha256sum target/mvnd-${{ env.VERSION }}-src.zip | cut -d ' ' -f 1 > mvnd-${{ env.VERSION }}-src.zip.sha256
-          sha256sum target/mvnd-${{ env.VERSION }}-src.tar.gz | cut -d ' ' -f 1 > mvnd-${{ env.VERSION }}-src.tar.gz.sha256
+          sha256sum artifacts/mvnd-${{ env.VERSION }}-src.zip | cut -d ' ' -f 1 > artifacts/mvnd-${{ env.VERSION }}-src.zip.sha256
+          sha256sum artifacts/mvnd-${{ env.VERSION }}-src.tar.gz | cut -d ' ' -f 1 > artifacts/mvnd-${{ env.VERSION }}-src.tar.gz.sha256
 
       - name: Create Release
         id: create_release
@@ -130,7 +159,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/mvnd-${{ env.VERSION }}-src.zip
+          asset_path: artifacts/mvnd-${{ env.VERSION }}-src.zip
           asset_name: mvnd-${{ env.VERSION }}-src.zip
           asset_content_type: application/zip
 
@@ -150,7 +179,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: target/mvnd-${{ env.VERSION }}-src.tar.gz
+          asset_path: artifacts/mvnd-${{ env.VERSION }}-src.tar.gz
           asset_name: mvnd-${{ env.VERSION }}-src.tar.gz
           asset_content_type: application/tar.gz
 
