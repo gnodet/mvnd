@@ -97,8 +97,9 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: artifacts
-          path: target/mvnd-*-src.zip
-          path: target/mvnd-*-src.tar.gz
+          path: |
+            target/mvnd-*-src.zip
+            target/mvnd-*-src.tar.gz
 
 
   release:
