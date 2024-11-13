@@ -34,7 +34,6 @@ import java.util.stream.Stream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.maven.cling.invoker.mvn.CommonsCliMavenOptions;
 import org.apache.maven.jline.MessageUtils;
@@ -55,18 +54,14 @@ public class CommonsCliDaemonMavenOptions extends CommonsCliMavenOptions impleme
         super(source, cliManager, commandLine);
     }
 
-    public org.apache.commons.cli.Options getOptions() {
-        return this.cliManager.getOptions();
-    }
-
-    private static CommonsCliDaemonMavenOptions interpolate(
-            CommonsCliDaemonMavenOptions options, Collection<Map<String, String>> properties) {
+    @Override
+    public DaemonMavenOptions interpolate(Collection<Map<String, String>> properties) {
         try {
             // now that we have properties, interpolate all arguments
             BasicInterpolator interpolator = createInterpolator(properties);
             CommandLine.Builder commandLineBuilder = new CommandLine.Builder();
             commandLineBuilder.setDeprecatedHandler(o -> {});
-            for (Option option : options.commandLine.getOptions()) {
+            for (Option option : commandLine.getOptions()) {
                 if (!CLIManager.USER_PROPERTY.equals(option.getOpt())) {
                     List<String> values = option.getValuesList();
                     for (ListIterator<String> it = values.listIterator(); it.hasNext(); ) {
@@ -75,39 +70,22 @@ public class CommonsCliDaemonMavenOptions extends CommonsCliMavenOptions impleme
                 }
                 commandLineBuilder.addOption(option);
             }
-            for (String arg : options.commandLine.getArgList()) {
+            for (String arg : commandLine.getArgList()) {
                 commandLineBuilder.addArg(interpolator.interpolate(arg));
             }
-            return new CommonsCliDaemonMavenOptions(
-                    options.source, (CLIManager) options.cliManager, commandLineBuilder.build());
+            return new CommonsCliDaemonMavenOptions(source, (CLIManager) cliManager, commandLineBuilder.build());
         } catch (InterpolationException e) {
             throw new IllegalArgumentException("Could not interpolate CommonsCliOptions", e);
         }
     }
 
-    @Override
-    public DaemonMavenOptions interpolate(Collection<Map<String, String>> properties) {
-        return interpolate(this, properties);
-    }
-
     protected static class CLIManager extends CommonsCliMavenOptions.CLIManager {
-        public static final String RAW_STREAMS = "ras";
-
         private static final Pattern HTML_TAGS_PATTERN = Pattern.compile("<[^>]*>");
         private static final Pattern COLUMNS_DETECTOR_PATTERN = Pattern.compile("^[ ]+[^s]");
         private static final Pattern WS_PATTERN = Pattern.compile("\\s+");
 
         static String toPlainText(String javadocText) {
             return HTML_TAGS_PATTERN.matcher(javadocText).replaceAll("");
-        }
-
-        @Override
-        protected void prepareOptions(Options options) {
-            super.prepareOptions(options);
-            options.addOption(Option.builder(RAW_STREAMS)
-                    .longOpt("raw-streams")
-                    .desc("Use raw-streams for daemon communication")
-                    .build());
         }
 
         @Override

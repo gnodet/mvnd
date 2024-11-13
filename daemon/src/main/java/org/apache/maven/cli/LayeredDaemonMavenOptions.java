@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.apache.maven.cling.invoker.mvn.LayeredMavenOptions;
 
@@ -41,11 +40,6 @@ public class LayeredDaemonMavenOptions extends LayeredMavenOptions<DaemonMavenOp
 
     private LayeredDaemonMavenOptions(List<DaemonMavenOptions> options) {
         super(options);
-    }
-
-    @Override
-    public Optional<Boolean> rawStreams() {
-        return returnFirstPresentOrEmpty(DaemonMavenOptions::rawStreams);
     }
 
     @Override
