@@ -24,7 +24,6 @@ import java.util.Map;
 import org.apache.maven.api.cli.mvn.MavenOptions;
 
 public interface DaemonMavenOptions extends MavenOptions {
-
     @Override
     DaemonMavenOptions interpolate(Collection<Map<String, String>> properties);
 }

@@ -24,18 +24,18 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.ParseException;
+import org.apache.maven.api.cli.Options;
 import org.apache.maven.api.cli.ParserException;
 import org.apache.maven.api.cli.extensions.CoreExtension;
-import org.apache.maven.api.cli.mvn.MavenInvokerRequest;
 import org.apache.maven.api.cli.mvn.MavenOptions;
-import org.apache.maven.cling.invoker.mvn.BaseMavenParser;
-import org.apache.maven.cling.invoker.mvn.DefaultMavenInvokerRequest;
+import org.apache.maven.cling.invoker.mvn.MavenInvokerRequest;
+import org.apache.maven.cling.invoker.mvn.MavenParser;
 import org.mvndaemon.mvnd.common.Environment;
 
-public class DaemonMavenParser extends BaseMavenParser<MavenOptions, MavenInvokerRequest<MavenOptions>> {
+public class DaemonMavenParser extends MavenParser {
     @Override
-    protected DefaultMavenInvokerRequest<MavenOptions> getInvokerRequest(LocalContext context) {
-        return new DefaultMavenInvokerRequest<>(
+    protected MavenInvokerRequest getInvokerRequest(LocalContext context) {
+        return new MavenInvokerRequest(
                 context.parserRequest,
                 context.cwd,
                 context.installationDirectory,
@@ -48,6 +48,7 @@ public class DaemonMavenParser extends BaseMavenParser<MavenOptions, MavenInvoke
                 context.parserRequest.out(),
                 context.parserRequest.err(),
                 context.extensions,
+                getJvmArguments(context.rootDirectory),
                 (DaemonMavenOptions) context.options);
     }
 
@@ -61,7 +62,7 @@ public class DaemonMavenParser extends BaseMavenParser<MavenOptions, MavenInvoke
     }
 
     @Override
-    protected MavenOptions assembleOptions(List<MavenOptions> parsedOptions) {
+    protected MavenOptions assembleOptions(List<Options> parsedOptions) {
         return LayeredDaemonMavenOptions.layerDaemonMavenOptions(
                 parsedOptions.stream().map(o -> (DaemonMavenOptions) o).toList());
     }

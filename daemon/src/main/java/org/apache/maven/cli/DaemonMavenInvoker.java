@@ -18,12 +18,14 @@
  */
 package org.apache.maven.cli;
 
+import org.apache.maven.api.cli.InvokerException;
+import org.apache.maven.api.cli.InvokerRequest;
 import org.apache.maven.api.cli.Options;
-import org.apache.maven.api.cli.mvn.MavenInvokerRequest;
-import org.apache.maven.api.cli.mvn.MavenOptions;
 import org.apache.maven.cling.invoker.ContainerCapsuleFactory;
 import org.apache.maven.cling.invoker.ProtoLookup;
-import org.apache.maven.cling.invoker.mvn.resident.DefaultResidentMavenInvoker;
+import org.apache.maven.cling.invoker.mvn.resident.ResidentMavenContext;
+import org.apache.maven.cling.invoker.mvn.resident.ResidentMavenInvoker;
+import org.apache.maven.cling.utils.CLIReportingUtils;
 import org.apache.maven.jline.MessageUtils;
 import org.apache.maven.logging.BuildEventListener;
 import org.apache.maven.logging.LoggingOutputStream;
@@ -31,28 +33,13 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.mvndaemon.mvnd.common.Environment;
 
-public class DaemonMavenInvoker extends DefaultResidentMavenInvoker {
+public class DaemonMavenInvoker extends ResidentMavenInvoker {
     public DaemonMavenInvoker(ProtoLookup protoLookup) {
         super(protoLookup);
     }
 
-    // TODO: this is a hack, and fixes issue in DefaultResidentMavenInvoker that does not copy TCCL
-    private ClassLoader tccl;
-
-    protected int doInvoke(LocalContext context) throws Exception {
-        try {
-            if (tccl != null) {
-                context.currentThreadContextClassLoader = tccl;
-                Thread.currentThread().setContextClassLoader(context.currentThreadContextClassLoader);
-            }
-            return super.doInvoke(context);
-        } finally {
-            this.tccl = context.currentThreadContextClassLoader;
-        }
-    }
-
     @Override
-    protected Terminal createTerminal(LocalContext context) {
+    protected Terminal createTerminal(ResidentMavenContext context) {
         MessageUtils.systemInstall(
                 builder -> {
                     builder.streams(
@@ -69,18 +56,18 @@ public class DaemonMavenInvoker extends DefaultResidentMavenInvoker {
     }
 
     @Override
-    protected org.apache.maven.logging.BuildEventListener doDetermineBuildEventListener(LocalContext context) {
+    protected org.apache.maven.logging.BuildEventListener doDetermineBuildEventListener(ResidentMavenContext context) {
         return context.invokerRequest.lookup().lookup(BuildEventListener.class);
     }
 
     @Override
-    protected void helpOrVersionAndMayExit(LocalContext context) throws Exception {
-        MavenInvokerRequest<MavenOptions> invokerRequest = context.invokerRequest;
+    protected void helpOrVersionAndMayExit(ResidentMavenContext context) throws Exception {
+        InvokerRequest invokerRequest = context.invokerRequest;
         BuildEventListener buildEventListener =
                 context.invokerRequest.parserRequest().lookup().lookup(BuildEventListener.class);
         if (invokerRequest.options().help().isPresent()) {
             context.invokerRequest.options().displayHelp(invokerRequest.parserRequest(), buildEventListener::log);
-            throw new ExitException(0);
+            throw new InvokerException.ExitException(0);
         }
         if (invokerRequest.options().showVersionAndExit().isPresent()) {
             if (invokerRequest.options().quiet().orElse(false)) {
@@ -88,12 +75,12 @@ public class DaemonMavenInvoker extends DefaultResidentMavenInvoker {
             } else {
                 buildEventListener.log(CLIReportingUtils.showVersion());
             }
-            throw new ExitException(0);
+            throw new InvokerException.ExitException(0);
         }
     }
 
     @Override
-    protected void preCommands(LocalContext context) throws Exception {
+    protected void preCommands(ResidentMavenContext context) throws Exception {
         Options mavenOptions = context.invokerRequest.options();
         if (mavenOptions.verbose().orElse(false) || mavenOptions.showVersion().orElse(false)) {
             context.invokerRequest
@@ -105,13 +92,12 @@ public class DaemonMavenInvoker extends DefaultResidentMavenInvoker {
     }
 
     @Override
-    protected ContainerCapsuleFactory<MavenOptions, MavenInvokerRequest<MavenOptions>, LocalContext>
-            createContainerCapsuleFactory() {
+    protected ContainerCapsuleFactory<ResidentMavenContext> createContainerCapsuleFactory() {
         return new DaemonPlexusContainerCapsuleFactory();
     }
 
     @Override
-    protected int doExecute(LocalContext context) throws Exception {
+    protected int doExecute(ResidentMavenContext context) throws Exception {
         context.logger.info(MessageUtils.builder()
                 .a("Processing build on daemon ")
                 .strong(Environment.MVND_ID.asString())
