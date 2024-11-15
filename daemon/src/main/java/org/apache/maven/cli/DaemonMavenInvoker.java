@@ -18,6 +18,10 @@
  */
 package org.apache.maven.cli;
 
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.util.Optional;
+
 import org.apache.maven.api.cli.InvokerException;
 import org.apache.maven.api.cli.InvokerRequest;
 import org.apache.maven.api.cli.Options;
@@ -43,8 +47,8 @@ public class DaemonMavenInvoker extends ResidentMavenInvoker {
         MessageUtils.systemInstall(
                 builder -> {
                     builder.streams(
-                            context.invokerRequest.in().get(),
-                            context.invokerRequest.out().get());
+                            context.invokerRequest.in().orElseThrow(),
+                            context.invokerRequest.out().orElseThrow());
                     builder.systemOutput(TerminalBuilder.SystemOutput.ForcedSysOut);
                     builder.provider(TerminalBuilder.PROP_PROVIDER_EXEC);
                     if (context.coloredOutput != null) {
@@ -53,6 +57,26 @@ public class DaemonMavenInvoker extends ResidentMavenInvoker {
                 },
                 terminal -> doConfigureWithTerminal(context, terminal));
         return MessageUtils.getTerminal();
+    }
+
+    @Override
+    protected void doConfigureWithTerminal(ResidentMavenContext context, Terminal terminal) {
+        super.doConfigureWithTerminal(context, terminal);
+        Optional<Boolean> rawStreams = context.invokerRequest.options().rawStreams();
+        if (rawStreams.orElse(false)) {
+            System.setOut(printStream(context.invokerRequest.out().orElseThrow()));
+            System.setErr(printStream(context.invokerRequest.err().orElseThrow()));
+        }
+    }
+
+    private PrintStream printStream(OutputStream outputStream) {
+        if (outputStream instanceof LoggingOutputStream los) {
+            return los.printStream();
+        } else if (outputStream instanceof PrintStream ps) {
+            return ps;
+        } else {
+            return new PrintStream(outputStream);
+        }
     }
 
     @Override
