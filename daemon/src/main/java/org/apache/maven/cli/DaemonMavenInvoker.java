@@ -30,6 +30,7 @@ import org.apache.maven.cling.invoker.ProtoLookup;
 import org.apache.maven.cling.invoker.mvn.resident.ResidentMavenContext;
 import org.apache.maven.cling.invoker.mvn.resident.ResidentMavenInvoker;
 import org.apache.maven.cling.utils.CLIReportingUtils;
+import org.apache.maven.execution.MavenExecutionRequest;
 import org.apache.maven.jline.MessageUtils;
 import org.apache.maven.logging.BuildEventListener;
 import org.apache.maven.logging.LoggingOutputStream;
@@ -43,7 +44,7 @@ public class DaemonMavenInvoker extends ResidentMavenInvoker {
     }
 
     @Override
-    protected Terminal createTerminal(ResidentMavenContext context) {
+    protected void createTerminal(ResidentMavenContext context) {
         MessageUtils.systemInstall(
                 builder -> {
                     builder.streams(
@@ -56,7 +57,12 @@ public class DaemonMavenInvoker extends ResidentMavenInvoker {
                     }
                 },
                 terminal -> doConfigureWithTerminal(context, terminal));
-        return MessageUtils.getTerminal();
+        context.terminal = MessageUtils.getTerminal();
+        context.closeables.add(MessageUtils::systemUninstall);
+        MessageUtils.registerShutdownHook();
+        if (context.coloredOutput != null) {
+            MessageUtils.setColorEnabled(context.coloredOutput);
+        }
     }
 
     @Override
@@ -121,7 +127,7 @@ public class DaemonMavenInvoker extends ResidentMavenInvoker {
     }
 
     @Override
-    protected int doExecute(ResidentMavenContext context) throws Exception {
+    protected int doExecute(ResidentMavenContext context, MavenExecutionRequest request) throws Exception {
         context.logger.info(MessageUtils.builder()
                 .a("Processing build on daemon ")
                 .strong(Environment.MVND_ID.asString())
@@ -134,7 +140,7 @@ public class DaemonMavenInvoker extends ResidentMavenInvoker {
         context.logger.info("rootDirectory: " + context.invokerRequest.rootDirectory());
 
         try {
-            return super.doExecute(context);
+            return super.doExecute(context, request);
         } finally {
             LoggingOutputStream.forceFlush(System.out);
             LoggingOutputStream.forceFlush(System.err);
