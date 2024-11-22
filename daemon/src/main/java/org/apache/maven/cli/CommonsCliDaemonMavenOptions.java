@@ -19,11 +19,8 @@
 package org.apache.maven.cli;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.function.Consumer;
@@ -33,18 +30,13 @@ import java.util.stream.Stream;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
 import org.apache.commons.cli.ParseException;
 import org.apache.maven.cling.invoker.mvn.CommonsCliMavenOptions;
 import org.apache.maven.jline.MessageUtils;
-import org.codehaus.plexus.interpolation.BasicInterpolator;
-import org.codehaus.plexus.interpolation.InterpolationException;
 import org.mvndaemon.mvnd.common.Environment;
 import org.mvndaemon.mvnd.common.OptionType;
 
-import static org.apache.maven.cling.invoker.Utils.createInterpolator;
-
-public class CommonsCliDaemonMavenOptions extends CommonsCliMavenOptions implements DaemonMavenOptions {
+public class CommonsCliDaemonMavenOptions extends CommonsCliMavenOptions {
     public static CommonsCliDaemonMavenOptions parse(String source, String[] args) throws ParseException {
         CLIManager cliManager = new CLIManager();
         return new CommonsCliDaemonMavenOptions(source, cliManager, cliManager.parse(args));
@@ -52,31 +44,6 @@ public class CommonsCliDaemonMavenOptions extends CommonsCliMavenOptions impleme
 
     protected CommonsCliDaemonMavenOptions(String source, CLIManager cliManager, CommandLine commandLine) {
         super(source, cliManager, commandLine);
-    }
-
-    @Override
-    public DaemonMavenOptions interpolate(Collection<Map<String, String>> properties) {
-        try {
-            // now that we have properties, interpolate all arguments
-            BasicInterpolator interpolator = createInterpolator(properties);
-            CommandLine.Builder commandLineBuilder = new CommandLine.Builder();
-            commandLineBuilder.setDeprecatedHandler(o -> {});
-            for (Option option : commandLine.getOptions()) {
-                if (!CLIManager.USER_PROPERTY.equals(option.getOpt())) {
-                    List<String> values = option.getValuesList();
-                    for (ListIterator<String> it = values.listIterator(); it.hasNext(); ) {
-                        it.set(interpolator.interpolate(it.next()));
-                    }
-                }
-                commandLineBuilder.addOption(option);
-            }
-            for (String arg : commandLine.getArgList()) {
-                commandLineBuilder.addArg(interpolator.interpolate(arg));
-            }
-            return new CommonsCliDaemonMavenOptions(source, (CLIManager) cliManager, commandLineBuilder.build());
-        } catch (InterpolationException e) {
-            throw new IllegalArgumentException("Could not interpolate CommonsCliOptions", e);
-        }
     }
 
     protected static class CLIManager extends CommonsCliMavenOptions.CLIManager {

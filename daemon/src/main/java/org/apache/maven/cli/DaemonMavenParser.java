@@ -24,34 +24,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.apache.commons.cli.ParseException;
-import org.apache.maven.api.cli.Options;
 import org.apache.maven.api.cli.ParserException;
 import org.apache.maven.api.cli.extensions.CoreExtension;
 import org.apache.maven.api.cli.mvn.MavenOptions;
-import org.apache.maven.cling.invoker.mvn.MavenInvokerRequest;
 import org.apache.maven.cling.invoker.mvn.MavenParser;
 import org.mvndaemon.mvnd.common.Environment;
 
 public class DaemonMavenParser extends MavenParser {
-    @Override
-    protected MavenInvokerRequest getInvokerRequest(LocalContext context) {
-        return new MavenInvokerRequest(
-                context.parserRequest,
-                context.cwd,
-                context.installationDirectory,
-                context.userHomeDirectory,
-                context.userProperties,
-                context.systemProperties,
-                context.topDirectory,
-                context.rootDirectory,
-                context.parserRequest.in(),
-                context.parserRequest.out(),
-                context.parserRequest.err(),
-                context.extensions,
-                getJvmArguments(context.rootDirectory),
-                (DaemonMavenOptions) context.options);
-    }
-
     @Override
     protected MavenOptions parseArgs(String source, List<String> args) throws ParserException {
         try {
@@ -59,12 +38,6 @@ public class DaemonMavenParser extends MavenParser {
         } catch (ParseException e) {
             throw new ParserException("Failed to parse source " + source + ": " + e.getMessage(), e.getCause());
         }
-    }
-
-    @Override
-    protected MavenOptions assembleOptions(List<Options> parsedOptions) {
-        return LayeredDaemonMavenOptions.layerDaemonMavenOptions(
-                parsedOptions.stream().map(o -> (DaemonMavenOptions) o).toList());
     }
 
     @Override
