@@ -226,6 +226,7 @@ public class DefaultClient implements Client {
 
     public DefaultClient(DaemonParameters parameters) {
         // Those options are needed in order to be able to set the environment correctly
+        // TODO: add --debug support to DaemonParameters
         this.parameters = parameters.withJdkJavaOpts(
                 "--add-opens java.base/java.io=ALL-UNNAMED "
                         + "--add-opens java.base/java.lang=ALL-UNNAMED "

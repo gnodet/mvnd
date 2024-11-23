@@ -18,7 +18,7 @@
  */
 package org.mvndaemon.mvnd.client;
 
-import org.apache.maven.cli.MavenCli;
+import org.apache.maven.cling.MavenCling;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +28,6 @@ public class DefaultClient {
         LOGGER.warn("Found old JDK, fallback to the embedded maven!");
         LOGGER.warn("Use JDK 11+ to run maven-mvnd client!");
 
-        MavenCli.main(argv);
+        MavenCling.main(argv);
     }
 }
