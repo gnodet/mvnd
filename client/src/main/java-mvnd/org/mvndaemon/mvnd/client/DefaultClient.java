@@ -69,8 +69,6 @@ public class DefaultClient implements Client {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultClient.class);
 
-    private final DaemonParameters parameters;
-
     public static void main(String[] argv) throws Exception {
         final List<String> args = new ArrayList<>(Arrays.asList(argv));
 
@@ -224,9 +222,10 @@ public class DefaultClient implements Client {
                 .noneMatch(e -> e.hasCommandLineOption(Collections.singletonList(arg)));
     }
 
+    private final DaemonParameters parameters;
+
     public DefaultClient(DaemonParameters parameters) {
         // Those options are needed in order to be able to set the environment correctly
-        // TODO: add --debug support to DaemonParameters
         this.parameters = parameters.withJdkJavaOpts(
                 "--add-opens java.base/java.io=ALL-UNNAMED "
                         + "--add-opens java.base/java.lang=ALL-UNNAMED "
