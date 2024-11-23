@@ -485,7 +485,6 @@ public class DefaultClient implements Client {
         }
 
         private DefaultResult(List<String> args, Exception exception, int exitCode) {
-            super();
             this.args = args;
             this.exception = exception;
             this.exitCode = exitCode;
