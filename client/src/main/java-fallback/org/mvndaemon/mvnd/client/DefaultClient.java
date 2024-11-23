@@ -26,7 +26,7 @@ public class DefaultClient {
     public static void main(String[] argv) throws Exception {
         final Logger LOGGER = LoggerFactory.getLogger(DefaultClient.class);
         LOGGER.warn("Found old JDK, fallback to the embedded maven!");
-        LOGGER.warn("Use JDK 11+ to run maven-mvnd client!");
+        LOGGER.warn("Use JDK 17+ to run maven-mvnd client!");
 
         MavenCling.main(argv);
     }
