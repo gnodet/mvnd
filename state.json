@@ -3,12 +3,67 @@
   "project": "apache/maven-mvnd",
   "project_name": "Maven Daemon",
   "loop_type": "review-loop",
-  "last_run": null,
-  "reviewed_prs": [],
+  "last_run": {
+    "timestamp": "2026-08-08T17:22:16Z",
+    "prs_checked": 3,
+    "reviews_posted": 3,
+    "tokens_estimate": 169181
+  },
+  "reviewed_prs": [
+    {
+      "number": 1558,
+      "title": "Fix flaky awaitIdle in integration tests",
+      "author": "gnodet",
+      "reviewed_at": "2026-08-08T17:22:16Z",
+      "verdict": "APPROVE",
+      "notes": "Clean fix for flaky test - 100ms sleep breaks busy-loop, 30s timeout for slow CI",
+      "interactions": [
+        {
+          "at": "2026-08-08T17:22:16Z",
+          "verdict": "APPROVE",
+          "notes": "Clean fix for flaky test - 100ms sleep breaks busy-loop, 30s timeout for slow CI"
+        }
+      ],
+      "review_count": 1
+    },
+    {
+      "number": 1562,
+      "title": "Backport: Add zsh support to completion script",
+      "author": "gnodet",
+      "reviewed_at": "2026-08-08T17:22:16Z",
+      "verdict": "APPROVE",
+      "notes": "Clean backport of PR #1559 from master to mvnd-1.x, cherry-pick applied cleanly",
+      "interactions": [
+        {
+          "at": "2026-08-08T17:22:16Z",
+          "verdict": "APPROVE",
+          "notes": "Clean backport of PR #1559 from master to mvnd-1.x, cherry-pick applied cleanly"
+        }
+      ],
+      "review_count": 1
+    },
+    {
+      "number": 1559,
+      "title": "Add zsh support to completion script",
+      "author": "gnodet",
+      "reviewed_at": "2026-08-08T17:22:16Z",
+      "verdict": "APPROVE",
+      "notes": "Well-structured zsh support with compinit suggestion for minimal setups",
+      "interactions": [
+        {
+          "at": "2026-08-08T17:22:16Z",
+          "verdict": "APPROVE",
+          "notes": "Well-structured zsh support with compinit suggestion for minimal setups"
+        }
+      ],
+      "review_count": 1
+    }
+  ],
   "skipped_prs": [],
   "review_queue": [],
   "active_failures": [],
   "escalated": [],
   "resolved": [],
-  "created_at": "2026-08-08T17:17:14Z"
+  "created_at": "2026-08-08T17:17:14Z",
+  "last_reviewed_updated_at": "2026-07-30T11:08:11Z"
 }
