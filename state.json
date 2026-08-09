@@ -4,10 +4,10 @@
   "project_name": "Maven Daemon",
   "loop_type": "review-loop",
   "last_run": {
-    "timestamp": "2026-08-08T17:50:15Z",
-    "prs_checked": 2,
-    "reviews_posted": 2,
-    "tokens_estimate": 322000
+    "timestamp": "2026-08-09T09:56:02Z",
+    "prs_checked": 1,
+    "reviews_posted": 1,
+    "tokens_estimate": 70000
   },
   "reviewed_prs": [
     {
@@ -126,17 +126,22 @@
       "number": 1713,
       "title": "Stream live test-progress from forked test JVMs to the mvnd client (2.x)",
       "author": "ammachado",
-      "reviewed_at": "2026-08-08T17:50:15Z",
-      "verdict": "COMMENT",
-      "notes": "ANSI regex bug confirmed (missing ESC prefix), test summary severity discarded; 3 FP removed",
+      "reviewed_at": "2026-08-09T09:56:02Z",
+      "verdict": "APPROVE",
+      "notes": "Re-review: ANSI regex bug fixed (commit 1b13e3da), approved",
       "interactions": [
         {
           "at": "2026-08-08T17:50:15Z",
           "verdict": "COMMENT",
           "notes": "ANSI regex bug confirmed (missing ESC prefix), test summary severity discarded; 3 FP removed"
+        },
+        {
+          "at": "2026-08-09T09:56:02Z",
+          "verdict": "APPROVE",
+          "notes": "Re-review: ANSI regex bug fixed (commit 1b13e3da), approved"
         }
       ],
-      "review_count": 1
+      "review_count": 2
     }
   ],
   "skipped_prs": [],
@@ -145,5 +150,5 @@
   "escalated": [],
   "resolved": [],
   "created_at": "2026-08-08T17:17:14Z",
-  "last_reviewed_updated_at": "2026-08-04T15:49:16Z"
+  "last_reviewed_updated_at": "2026-08-08T22:55:13Z"
 }
